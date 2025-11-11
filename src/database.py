@@ -98,7 +98,6 @@ def create_tables(conn):
     """
     
     # Bảng LIBRARY_SYSTEM (từ thiết kế CSDL của bạn)
-    # Ghi chú: Bảng này có vẻ lạ, nhưng tôi thêm vào cho khớp thiết kế.
     # Nó có thể dùng để lưu trạng thái của hệ thống.
     sql_create_library_system_table = """
     CREATE TABLE IF NOT EXiSTS LIBRARY_SYSTEM (
@@ -125,9 +124,6 @@ def create_tables(conn):
 
 # --- Hàm chính để chạy file này ---
 if __name__ == '__main__':
-    # Đoạn code này chỉ chạy khi bạn thực thi file database.py trực tiếp
-    # bằng lệnh: python src/database.py
-    
     print("Khởi tạo cơ sở dữ liệu...")
     
     db_conn = connect_db()
