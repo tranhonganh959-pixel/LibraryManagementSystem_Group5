@@ -3,16 +3,9 @@ from typing import List
 
 # --- Ghi chú quan trọng ---
 # File models.py định nghĩa "dữ liệu" trông như thế nào.
-# Các hàm (methods) trong Sơ đồ Lớp của bạn (như addBook, login,...) 
-# thực chất là "logic nghiệp vụ" và nên được viết trong file 'controller.py'.
-#
-# Tuy nhiên, để khớp 100% với Class Diagram, tôi sẽ thêm các hàm đó 
-# vào đây dưới dạng hàm rỗng (với 'pass') để bạn biết chúng thuộc về đâu.
-
 class Book:
     """
     Đại diện cho một cuốn sách trong thư viện.
-    (Cập nhật theo hình ảnh mới)
     """
     def __init__(self, book_id: int, title: str, author: str, genre: str, status: str = 'available'):
         self.book_id = book_id
@@ -31,11 +24,9 @@ class Book:
         """Trả về chuỗi thông tin chi tiết của sách"""
         return f"ID: {self.book_id}, Title: {self.title}, Author: {self.author}, Status: {self.status}"
 
-    # --- HÀM ĐƯỢC THÊM VÀO ---
     def get_status(self) -> str:
         """Trả về trạng thái hiện tại của sách"""
         return self.status
-    # --------------------------
 
     def get_book_id(self) -> int:
         return self.book_id
@@ -52,8 +43,8 @@ class User:
         self.user_id = user_id
         self.username = username
         self.name = name
-        self.contact_info = contact_info  # Có thể là email hoặc SĐT
-        self.password = password  # Lưu ý: Mật khẩu nên được mã hóa
+        self.contact_info = contact_info  
+        self.password = password  
 
     def login(self):
         """Logic đăng nhập (Sẽ nằm trong controller)"""
@@ -95,7 +86,7 @@ class Reader(User):
         # Gọi constructor của lớp cha (User)
         super().__init__(user_id, username, name, contact_info, password)
         self.reader_id = reader_id
-        self.borrowing_history: List[BorrowingRecord] = [] # Sẽ được tải từ C SDL
+        self.borrowing_history: List[BorrowingRecord] = [] # Sẽ được tải từ CSDL
 
     def view_borrowing_history(self):
         """Hiển thị lịch sử mượn sách (Logic sẽ nằm trong controller)"""
