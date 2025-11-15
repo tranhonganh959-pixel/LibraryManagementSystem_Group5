@@ -1,12 +1,14 @@
+
 import database as db  
 import models as models 
+
 
 from datetime import date, timedelta
 
 
 
 def controller_login(username, password):
-
+    
     conn = db.connect_db()
     if conn is None:
         return None
@@ -19,10 +21,10 @@ def controller_login(username, password):
             print("Error: Username does not exist.")
             return None
 
-
+        
         db_user_id, db_username, db_password, db_name, db_email, db_phone, db_user_type = user_data
 
-       
+        
         if password == db_password:
             print(f"Login successful! Welcome {db_name} (Role: {db_user_type})")
 
@@ -76,12 +78,12 @@ def controller_login(username, password):
             return None
 
     finally:
-     
+        
         conn.close()
 
 
 def controller_register_reader(username, password, name, email, phone):
-
+    
     conn = db.connect_db()
     if conn is None:
         return None
@@ -110,7 +112,9 @@ def controller_register_reader(username, password, name, email, phone):
 
 
 def controller_add_new_book(title, author, genre):
-
+    """
+    Handles logic for adding a new book.
+    """
     conn = db.connect_db()
     if conn is None:
         return False
@@ -127,7 +131,7 @@ def controller_add_new_book(title, author, genre):
         conn.close()
 
 def controller_search_book(keyword):
-
+    
     conn = db.connect_db()
     if conn is None:
         return [] 
@@ -168,14 +172,14 @@ def controller_borrow_book(reader_id, book_id):
             print(f"Error: Book '{book_data[1]}' is currently borrowed.")
             return False
 
-
+        
         success_update = db.db_update_book_status(conn, book_id, 'borrowed')
 
         if not success_update:
             print("Error: Could not update book status.")
             return False
 
-
+        
         borrow_date = date.today()
         due_date = borrow_date + timedelta(days=14) 
 
