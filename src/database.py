@@ -1,7 +1,13 @@
-=import sqlite3
+import sqlite3
 from sqlite3 import Error
+import os # <-- Thêm thư viện 'os'
 
-DATABASE_NAME = "src/library.db"
+# --- SỬA LỖI PATH ---
+# Lấy đường dẫn tuyệt đối của thư mục chứa file này (tức là thư mục 'src')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Tạo đường dẫn tới file CSDL (nằm trong thư mục 'src')
+DATABASE_NAME = os.path.join(BASE_DIR, "library.db")
+# ---------------------
 
 def connect_db():
     """ Tạo kết nối tới CSDL SQLite """
@@ -70,6 +76,8 @@ def create_tables(conn):
     """
 
     # 5. Bảng Admin (Kế thừa từ User)
+    # Ghi chú: Theo models.py, Admin kế thừa Librarian,
+    # Cần đảm bảo khi tạo Admin, họ CÓ MỘT BẢN GHI ở LIBRARIAN
     sql_create_admin_table = """
     CREATE TABLE IF NOT EXISTS ADMIN (
         admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,19 +114,6 @@ def create_tables(conn):
         print("Tạo bảng thành công (hoặc bảng đã tồn tại).")
     except Error as e:
         print(f"Lỗi khi tạo bảng: {e}")
-
-# --- Hàm chính để chạy file này ---
-if __name__ == '__main__':
-    # Đoạn code này chỉ chạy khi bạn thực thi file database.py trực tiếp
-    # bằng lệnh: python src/database.py
-    
-    print("Khởi tạo cơ sở dữ liệu...")
-    db_conn = connect_db()
-    
-    if db_conn is not None:
-        create_tables(db_conn)
-        db_conn.close()
-        print("Đóng kết nối CSDL.")
 
 # ===============================================
 # ===== CÁC HÀM CRUD (THÊM, SỬA, XÓA, LẤY) =====
@@ -158,6 +153,30 @@ def db_get_user_by_username(conn, username):
     cur = conn.cursor()
     cur.execute(sql, (username,))
     # fetchone() trả về một hàng (row) dưới dạng tuple
+    return cur.fetchone()
+
+# --- HÀM MỚI 1 ---
+def db_get_reader_by_user_id(conn, user_id):
+    """Lấy chi tiết Reader bằng user_id"""
+    sql = "SELECT reader_id, membership_date, total_borrowed FROM READER WHERE user_id = ?"
+    cur = conn.cursor()
+    cur.execute(sql, (user_id,))
+    return cur.fetchone()
+
+# --- HÀM MỚI 2 ---
+def db_get_librarian_by_user_id(conn, user_id):
+    """Lấy chi tiết Librarian bằng user_id"""
+    sql = "SELECT librarian_id, staff_id, role, hire_date FROM LIBRARIAN WHERE user_id = ?"
+    cur = conn.cursor()
+    cur.execute(sql, (user_id,))
+    return cur.fetchone()
+
+# --- HÀM MỚI 3 ---
+def db_get_admin_by_user_id(conn, user_id):
+    """Lấy chi tiết Admin bằng user_id"""
+    sql = "SELECT admin_id, privileged_level FROM ADMIN WHERE user_id = ?"
+    cur = conn.cursor()
+    cur.execute(sql, (user_id,))
     return cur.fetchone()
 
 def db_add_book(conn, title, author, genre, status='available'):
@@ -224,3 +243,41 @@ def db_search_books(conn, keyword):
     keyword_like = f"%{keyword}%" # Thêm dấu % để tìm kiếm
     cur.execute(sql, (keyword_like, keyword_like))
     return cur.fetchall() # fetchall() trả về một danh sách các hàng
+
+# --- SỬA LỖI NAME ERROR ---
+# Di chuyển khối này xuống CUỐI CÙNG của file
+if __name__ == '__main__':
+    # Đoạn code này chỉ chạy khi bạn thực thi file database.py trực tiếp
+    # bằng lệnh: python src/database.py
+    
+    print("Khởi tạo cơ sở dữ liệu...")
+    db_conn = connect_db()
+    
+    if db_conn is not None:
+        create_tables(db_conn)
+        
+        # --- THÊM 1 ADMIN/LIBRARIAN ĐỂ TEST ---
+        try:
+            print("Đang thử thêm user test 'admin' và 'lib'...")
+            # 1. Tạo User "lib"
+            user_lib_id = db_add_user(db_conn, "lib", "123", "Thủ Thư", "lib@test.com", "0123", "librarian")
+            if user_lib_id:
+                # 2. Tạo Librarian liên kết
+                db_conn.execute("INSERT INTO LIBRARIAN(user_id, staff_id, role) VALUES (?, ?, ?)", (user_lib_id, "S001", "Librarian"))
+                print("Tạo user 'lib' (pass: 123) thành công.")
+
+            # 1. Tạo User "admin"
+            user_admin_id = db_add_user(db_conn, "admin", "123", "Admin Quyền Lực", "admin@test.com", "999", "admin")
+            if user_admin_id:
+                # 2. Admin phải có cả bản ghi Librarian (vì kế thừa)
+                db_conn.execute("INSERT INTO LIBRARIAN(user_id, staff_id, role) VALUES (?, ?, ?)", (user_admin_id, "A001", "Admin"))
+                # 3. Và bản ghi Admin
+                db_conn.execute("INSERT INTO ADMIN(user_id, privileged_level) VALUES (?, ?)", (user_admin_id, "Full"))
+                print("Tạo user 'admin' (pass: 123) thành công.")
+            
+            db_conn.commit()
+        except Exception as e:
+            print(f"Không thể thêm user test (có thể đã tồn tại): {e}")
+        
+        db_conn.close()
+        print("Đóng kết nối CSDL.")
