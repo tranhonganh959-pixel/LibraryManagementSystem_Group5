@@ -8,7 +8,6 @@ from datetime import date, timedelta
 
 
 def controller_login(username, password):
-
     
     conn = db.connect_db()
     if conn is None:
@@ -19,15 +18,15 @@ def controller_login(username, password):
         user_data = db.db_get_user_by_username(conn, username)
 
         if user_data is None:
-            print("Lỗi: Tên đăng nhập không tồn tại.")
+            print("Error: Username does not exist.")
             return None
 
-       
+        
         db_user_id, db_username, db_password, db_name, db_email, db_phone, db_user_type = user_data
 
         
         if password == db_password:
-            print(f"Đăng nhập thành công! Chào mừng {db_name} (Role: {db_user_type})")
+            print(f"Login successful! Welcome {db_name} (Role: {db_user_type})")
 
             
             user_obj = None
@@ -39,7 +38,7 @@ def controller_login(username, password):
                     user_obj = models.Reader(db_user_id, db_username, db_name, db_email, password, 
                                             reader_id=actual_reader_id)
                 else:
-                    print(f"Lỗi dữ liệu: User {username} là 'reader' nhưng không tìm thấy bản ghi READER.")
+                    print(f"Data Error: User {username} is 'reader' but no READER record found.")
             
             elif db_user_type == 'librarian':
                 librarian_details = db.db_get_librarian_by_user_id(conn, db_user_id)
@@ -49,10 +48,10 @@ def controller_login(username, password):
                     user_obj = models.Librarian(db_user_id, db_username, db_name, db_email, password, 
                                                 staff_id=actual_staff_id, role=actual_role)
                 else:
-                    print(f"Lỗi dữ liệu: User {username} là 'librarian' nhưng không tìm thấy bản ghi LIBRARIAN.")
+                    print(f"Data Error: User {username} is 'librarian' but no LIBRARIAN record found.")
             
             elif db_user_type == 'admin':
-               
+                
                 librarian_details = db.db_get_librarian_by_user_id(conn, db_user_id)
                 admin_details = db.db_get_admin_by_user_id(conn, db_user_id)
                 
@@ -66,7 +65,7 @@ def controller_login(username, password):
                                             staff_id=staff_id, role=role, 
                                             admin_id=admin_id, privilege_level=privilege_level)
                 else:
-                    print(f"Lỗi dữ liệu: User {username} là 'admin' nhưng thiếu bản ghi LIBRARIAN hoặc ADMIN.")
+                    print(f"Data Error: User {username} is 'admin' but missing LIBRARIAN or ADMIN record.")
 
             else: 
                 
@@ -75,36 +74,36 @@ def controller_login(username, password):
             return user_obj
         
         else:
-            print("Lỗi: Sai mật khẩu.")
+            print("Error:Incorrect password.")
             return None
 
     finally:
-      
+        
         conn.close()
 
 
 def controller_register_reader(username, password, name, email, phone):
-    """
-    Xử lý logic đăng ký bạn đọc mới.
-    """
+    
     conn = db.connect_db()
     if conn is None:
         return None
 
     try:
+        
         user_id = db.db_add_user(conn, username, password, name, email, phone, 'reader')
 
         if user_id is None:
             return None 
 
+        
         membership_date = date.today().isoformat() 
         reader_id = db.db_add_reader(conn, user_id, membership_date)
 
         if reader_id:
-            print(f"Đăng ký bạn đọc '{name}' thành công!")
+            print(f"Reader '{name}' registered successfully!")
             return reader_id
         else:
-            print("Đăng ký bạn đọc thất bại ở bước tạo Reader.")
+            print("Reader registration failed at Reader creation step.")
             return None
 
     finally:
@@ -114,7 +113,7 @@ def controller_register_reader(username, password, name, email, phone):
 
 def controller_add_new_book(title, author, genre):
     """
-    Xử lý logic thêm sách mới.
+    Handles logic for adding a new book.
     """
     conn = db.connect_db()
     if conn is None:
@@ -123,19 +122,16 @@ def controller_add_new_book(title, author, genre):
     try:
         book_id = db.db_add_book(conn, title, author, genre, 'available')
         if book_id:
-            print(f"Đã thêm sách '{title}' (ID: {book_id}) vào hệ thống.")
+            print(f"Added book '{title}' (ID: {book_id}) to the system.")
             return True
         else:
-            print("Thêm sách thất bại.")
+            print("Failed to add book.")
             return False
     finally:
         conn.close()
 
 def controller_search_book(keyword):
-    """
-    Xử lý logic tìm kiếm sách.
-    Trả về một danh sách các đối tượng Book.
-    """
+    
     conn = db.connect_db()
     if conn is None:
         return [] 
@@ -145,7 +141,7 @@ def controller_search_book(keyword):
 
         book_list = []
         for row in results:
-           
+            
             book_obj = models.Book(book_id=row[0], title=row[1], author=row[2], genre=row[3], status=row[4])
             book_list.append(book_obj)
 
@@ -157,32 +153,33 @@ def controller_search_book(keyword):
 
 def controller_borrow_book(reader_id, book_id):
     """
-    Xử lý logic mượn sách.
+    Handles logic for borrowing a book.
     """
     conn = db.connect_db()
     if conn is None:
         return False
 
     try:
-
+        
         book_data = db.db_get_book_by_id(conn, book_id)
         if book_data is None:
-            print(f"Lỗi: Không tìm thấy sách với ID {book_id}.")
+            print(f"Error: Book with ID {book_id} not found.")
             return False
 
         book_status = book_data[4] 
+
         if book_status == 'borrowed':
-            print(f"Lỗi: Sách '{book_data[1]}' hiện đang được mượn.")
+            print(f"Error: Book '{book_data[1]}' is currently borrowed.")
             return False
 
-
+        
         success_update = db.db_update_book_status(conn, book_id, 'borrowed')
 
         if not success_update:
-            print("Lỗi: Không thể cập nhật trạng thái sách.")
+            print("Error: Could not update book status.")
             return False
 
-
+        
         borrow_date = date.today()
         due_date = borrow_date + timedelta(days=14) 
 
@@ -191,10 +188,10 @@ def controller_borrow_book(reader_id, book_id):
                                                due_date.isoformat())
 
         if record_id:
-            print(f"Bạn đọc {reader_id} đã mượn thành công sách {book_id}.")
+            print(f"Reader {reader_id} successfully borrowed book {book_id}.")
             return True
         else:
-            print("Lỗi: Không thể tạo bản ghi mượn.")
+            print("Error: Could not create borrow record.")
             return False
 
     finally:
