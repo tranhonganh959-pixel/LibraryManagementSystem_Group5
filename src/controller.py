@@ -1,53 +1,85 @@
-import src.database as db  # Gọi file database.py
-import src.models as models # Gọi file models.py
+
+import database as db  
+import models as models 
+
+
 from datetime import date, timedelta
 
-# --- Logic Xác thực & Người dùng ---
+
 
 def controller_login(username, password):
-    """
-    Xử lý logic đăng nhập.
-    Trả về một đối tượng (User, Librarian,...) nếu thành công,
-    hoặc None nếu thất bại.
-    """
-    # 1. Mở kết nối
+
+    
     conn = db.connect_db()
     if conn is None:
         return None
-        
+
     try:
-        # 2. Gọi hàm từ database.py
-        user_data = db.db_get_user_by_username(conn, username)
         
+        user_data = db.db_get_user_by_username(conn, username)
+
         if user_data is None:
             print("Lỗi: Tên đăng nhập không tồn tại.")
             return None
-        
-        # 3. Chuyển dữ liệu thô (tuple) thành một đối tượng
-        # user_data[0] = user_id, [1] = username, [2] = password,...
+
+       
         db_user_id, db_username, db_password, db_name, db_email, db_phone, db_user_type = user_data
+
         
-        # 4. Kiểm tra mật khẩu
         if password == db_password:
-            print(f"Đăng nhập thành công! Chào mừng {db_name}")
+            print(f"Đăng nhập thành công! Chào mừng {db_name} (Role: {db_user_type})")
+
             
-            # 5. Tạo đối tượng Model tương ứng
+            user_obj = None
+            
             if db_user_type == 'reader':
-                # (Tạm thời tạo đối tượng Reader cơ bản, cần thêm hàm để lấy reader_id)
-                user_obj = models.Reader(db_user_id, db_username, db_name, db_email, password, reader_id=db_user_id) 
+                reader_details = db.db_get_reader_by_user_id(conn, db_user_id)
+                if reader_details:
+                    actual_reader_id = reader_details[0] 
+                    user_obj = models.Reader(db_user_id, db_username, db_name, db_email, password, 
+                                            reader_id=actual_reader_id)
+                else:
+                    print(f"Lỗi dữ liệu: User {username} là 'reader' nhưng không tìm thấy bản ghi READER.")
+            
             elif db_user_type == 'librarian':
-                # (Tạm thời tạo đối tượng Librarian cơ bản, cần thêm hàm để lấy staff_id)
-                user_obj = models.Librarian(db_user_id, db_username, db_name, db_email, password, staff_id="TBD", role="Librarian") 
-            else: 
-                user_obj = models.User(db_user_id, db_username, db_name, db_email, password)
+                librarian_details = db.db_get_librarian_by_user_id(conn, db_user_id)
+                if librarian_details:
+                    actual_staff_id = librarian_details[1] 
+                    actual_role = librarian_details[2]     
+                    user_obj = models.Librarian(db_user_id, db_username, db_name, db_email, password, 
+                                                staff_id=actual_staff_id, role=actual_role)
+                else:
+                    print(f"Lỗi dữ liệu: User {username} là 'librarian' nhưng không tìm thấy bản ghi LIBRARIAN.")
+            
+            elif db_user_type == 'admin':
+               
+                librarian_details = db.db_get_librarian_by_user_id(conn, db_user_id)
+                admin_details = db.db_get_admin_by_user_id(conn, db_user_id)
                 
+                if librarian_details and admin_details:
+                    staff_id = librarian_details[1]
+                    role = librarian_details[2]
+                    admin_id = admin_details[0]
+                    privilege_level = admin_details[1]
+                    
+                    user_obj = models.Admin(db_user_id, db_username, db_name, db_email, password, 
+                                            staff_id=staff_id, role=role, 
+                                            admin_id=admin_id, privilege_level=privilege_level)
+                else:
+                    print(f"Lỗi dữ liệu: User {username} là 'admin' nhưng thiếu bản ghi LIBRARIAN hoặc ADMIN.")
+
+            else: 
+                
+                user_obj = models.User(db_user_id, db_username, db_name, db_email, password)
+
             return user_obj
+        
         else:
             print("Lỗi: Sai mật khẩu.")
             return None
-            
+
     finally:
-        # 6. Đóng kết nối
+      
         conn.close()
 
 
@@ -58,29 +90,27 @@ def controller_register_reader(username, password, name, email, phone):
     conn = db.connect_db()
     if conn is None:
         return None
-        
+
     try:
-        # 1. Gọi hàm từ database.py để tạo User trước
         user_id = db.db_add_user(conn, username, password, name, email, phone, 'reader')
-        
+
         if user_id is None:
-            return None # Lỗi đã được in từ database.py
-            
-        # 2. Dùng user_id đó để tạo Reader
-        membership_date = date.today().isoformat() # Lấy ngày hôm nay
+            return None 
+
+        membership_date = date.today().isoformat() 
         reader_id = db.db_add_reader(conn, user_id, membership_date)
-        
+
         if reader_id:
             print(f"Đăng ký bạn đọc '{name}' thành công!")
             return reader_id
         else:
             print("Đăng ký bạn đọc thất bại ở bước tạo Reader.")
-return None
-            
+            return None
+
     finally:
         conn.close()
 
-# --- Logic Nghiệp vụ Sách ---
+
 
 def controller_add_new_book(title, author, genre):
     """
@@ -89,7 +119,7 @@ def controller_add_new_book(title, author, genre):
     conn = db.connect_db()
     if conn is None:
         return False
-        
+
     try:
         book_id = db.db_add_book(conn, title, author, genre, 'available')
         if book_id:
@@ -108,22 +138,22 @@ def controller_search_book(keyword):
     """
     conn = db.connect_db()
     if conn is None:
-        return [] # Trả về danh sách rỗng
-        
+        return [] 
+
     try:
         results = db.db_search_books(conn, keyword)
-        
+
         book_list = []
         for row in results:
-            # Chuyển từng hàng dữ liệu thô (tuple) thành đối tượng Book
+           
             book_obj = models.Book(book_id=row[0], title=row[1], author=row[2], genre=row[3], status=row[4])
             book_list.append(book_obj)
-            
+
         return book_list
     finally:
         conn.close()
 
-# --- Logic Nghiệp vụ Mượn/Trả ---
+
 
 def controller_borrow_book(reader_id, book_id):
     """
@@ -134,40 +164,38 @@ def controller_borrow_book(reader_id, book_id):
         return False
 
     try:
-        # 1. Kiểm tra trạng thái sách
+
         book_data = db.db_get_book_by_id(conn, book_id)
         if book_data is None:
             print(f"Lỗi: Không tìm thấy sách với ID {book_id}.")
             return False
-            
-        book_status = book_data[4] # status là cột thứ 5 (index 4)
-        
+
+        book_status = book_data[4] 
         if book_status == 'borrowed':
             print(f"Lỗi: Sách '{book_data[1]}' hiện đang được mượn.")
             return False
-        
-        # 2. Sách có sẵn, tiến hành cho mượn
-        # Đổi trạng thái sách
+
+
         success_update = db.db_update_book_status(conn, book_id, 'borrowed')
-        
+
         if not success_update:
             print("Lỗi: Không thể cập nhật trạng thái sách.")
             return False
-            
-        # 3. Tạo bản ghi mượn
+
+
         borrow_date = date.today()
-        due_date = borrow_date + timedelta(days=14) # Cho mượn 14 ngày
-        
+        due_date = borrow_date + timedelta(days=14) 
+
         record_id = db.db_create_borrow_record(conn, book_id, reader_id, 
                                                borrow_date.isoformat(), 
                                                due_date.isoformat())
-        
+
         if record_id:
             print(f"Bạn đọc {reader_id} đã mượn thành công sách {book_id}.")
             return True
         else:
             print("Lỗi: Không thể tạo bản ghi mượn.")
             return False
-            
+
     finally:
         conn.close()
