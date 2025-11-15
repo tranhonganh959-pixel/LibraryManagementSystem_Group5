@@ -3,7 +3,7 @@ import database as database
 import models as models 
 
 def book_management_menu():
-    """Menu con Quản lý Sách"""
+    """Book Management submenu"""
     while True:
         print("\n--- 1. Book Management ---")
         print("1. Add new book")
@@ -25,15 +25,11 @@ def book_management_menu():
         elif choice == '2':
             print("--- Update Book (Not implemented) ---")
             
-            
         elif choice == '3':
             print("--- Delete Book (Not implemented) ---")
-           
         
-      
         elif choice == '4': 
             print("--- View All Books (Not implemented) ---")
-            
             
         elif choice == '5':
             break
@@ -41,10 +37,10 @@ def book_management_menu():
             print("Invalid choice. Please try again.")
 
 def reader_management_menu():
-    """Menu con Quản lý Bạn đọc"""
+    """Reader Management submenu"""
     while True:
         print("\n--- 2. Reader Management ---")
-        print("1. Register new reader")
+        print("1. Register new reader (Admin action)") 
         print("2. Update reader details")
         print("3. Delete reader profile")
         print("4. View list of all readers")
@@ -52,7 +48,7 @@ def reader_management_menu():
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            print("--- Register New Reader ---")
+            print("--- Register New Reader (Admin Action) ---") 
             username = input("Enter new username: ")
             password = input("Enter new password: ")
             name = input("Enter reader's full name: ")
@@ -69,14 +65,13 @@ def reader_management_menu():
             print("Invalid choice. Please try again.")
 
 def borrow_return_menu():
-    """Menu con Quản lý Mượn/Trả"""
-    
+    """Borrow/Return Management submenu"""
     while True:
         print("\n--- 3. Borrow/Return Management ---")
         print("1. Record new borrow transaction")
         print("2. Process book return")
         print("3. Back to Librarian Menu")
-        choice = input("Enter your choice: ")
+        choice = input("Enter yourM choice: ")
 
         if choice == '1':
             print("--- Borrow Book ---")
@@ -89,14 +84,14 @@ def borrow_return_menu():
             print("Press Enter to continue...")
             input()
             
-       
+        
         elif choice == '3':
             break
         else:
             print("Invalid choice. Please try again.")
 
 def search_statistics_menu():
-    """Menu con Tìm kiếm & Thống kê"""
+    """Search & Statistics submenu"""
     while True:
         print("\n--- 4. Search & Statistics ---")
         print("1. Search for books (by keyword)")
@@ -114,12 +109,10 @@ def search_statistics_menu():
             else:
                 print(f"Found {len(results)} book(s):")
                 for book in results:
-                    
                     print(f"  - {book.get_details()}")
             print("Press Enter to continue...")
             input()
 
-        
         elif choice == '3':
             break
         else:
@@ -128,8 +121,7 @@ def search_statistics_menu():
 
 
 def librarian_menu(librarian_user):
-    """Menu chính cho Thủ thư sau khi đăng nhập thành công"""
-   
+    """Main menu for Librarians after successful login"""
     role_name = "Admin" if isinstance(librarian_user, models.Admin) else "Librarian"
     print(f"\n--- Welcome, {role_name} {librarian_user.name}! (Staff ID: {librarian_user.staff_id}) ---")
     
@@ -152,56 +144,73 @@ def librarian_menu(librarian_user):
             search_statistics_menu()
         elif choice == '5':
             print(f"Logging out user {librarian_user.username}...")
-            break 
+            break
         else:
             print("Invalid choice. Please try again.")
 
 def login_screen():
-    """Màn hình Đăng nhập"""
+    """Login Screen"""
     print("\n--- LOGIN SCREEN ---")
     username = input("Enter username: ")
     password = input("Enter password: ")
-   
+    
     user = controller.controller_login(username, password)
     
     if user:
         if isinstance(user, models.Librarian):
-            librarian_menu(user) 
+            librarian_menu(user)
         elif isinstance(user, models.Reader):
             print(f"Login successful! (Reader menu not implemented). Welcome {user.name}!")
         else:
             print(f"Login successful! (User role '{type(user)}' has no menu).")
     else:
-       
         print("Login failed. Invalid username or password.")
         print("Press Enter to continue...")
         input()
 
 
 
+def register_screen():
+    """Screen for new readers to self-register"""
+    print("\n--- NEW READER REGISTRATION ---")
+    username = input("Enter new username: ")
+    password = input("Enter new password: ")
+    name = input("Enter your full name: ")
+    email = input("Enter your email: ")
+    phone = input("Enter your phone: ")
+    
+    
+    controller.controller_register_reader(username, password, name, email, phone)
+    print("Registration complete. You can now try to log in.")
+    print("Press Enter to continue...")
+    input()
+
 def main_menu():
-    """Menu chính của chương trình khi bắt đầu"""
+    """Main menu of the program when it starts"""
     while True:
         print("\n==========================================")
         print("   WELCOME TO LIBRARY MANAGEMENT SYSTEM   ")
         print("==========================================")
         print("--- Main Menu ---")
         print("1. Log In")
-        print("2. Exit")
+        print("2. Register (New Reader)") 
+        print("3. Exit")                 
         choice = input("Enter your choice: ")
 
         if choice == '1':
             login_screen()
-        elif choice == '2':
+        elif choice == '2':            
+            register_screen()
+        elif choice == '3':            
             print("Goodbye! Thank you for using the system.")
             break
         else:
-            print("Invalid choice. Please select 1 or 2.")
+            print("Invalid choice. Please select 1, 2, or 3.")
 
 def initialize_database():
     """
-    Hàm này đảm bảo CSDL và các bảng được tạo
-    trước khi chương trình chính chạy.
+    Ensures the database and tables are created
+    before the main program runs.
     """
     print("Initializing database...")
     conn = database.connect_db()
@@ -209,9 +218,12 @@ def initialize_database():
         database.create_tables(conn)
         conn.close()
         print("Database is ready.")
+              
     else:
         print("FATAL ERROR: Could not connect to database.")
         exit()
 
-    initialize_database() 
-    main_menu() 
+
+if __name__ == "__main__":
+    initialize_database()
+    main_menu()
