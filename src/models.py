@@ -1,11 +1,11 @@
 from datetime import date
 from typing import List
 
-# --- Ghi chú quan trọng ---
-# File models.py định nghĩa "dữ liệu" trông như thế nào.
+# --- Important Note ---
+# The models.py file defines what the "data" looks like.
 class Book:
     """
-    Đại diện cho một cuốn sách trong thư viện.
+    Represents a book in the library.
     """
     def __init__(self, book_id: int, title: str, author: str, genre: str, status: str = 'available'):
         self.book_id = book_id
@@ -15,29 +15,29 @@ class Book:
         self.status = status  # 'available' or 'borrowed'
 
     def update_status(self, new_status: str):
-        """Cập nhật trạng thái của sách (available/borrowed)"""
-        # Logic thực tế sẽ nằm trong controller
+        """Updates the book's status (available/borrowed)"""
+        # Actual logic will be in the controller
         self.status = new_status
-        print(f"Trạng thái sách {self.book_id} đã cập nhật thành {self.status}")
+        print(f"Book {self.book_id} status updated to {self.status}")
 
     def get_details(self) -> str:
-        """Trả về chuỗi thông tin chi tiết của sách"""
+        """Returns a detailed info string for the book"""
         return f"ID: {self.book_id}, Title: {self.title}, Author: {self.author}, Status: {self.status}"
 
     def get_status(self) -> str:
-        """Trả về trạng thái hiện tại của sách"""
+        """Returns the current status of the book"""
         return self.status
 
     def get_book_id(self) -> int:
         return self.book_id
 
     def is_available(self) -> bool:
-        """Kiểm tra xem sách có sẵn để mượn không"""
+        """Checks if the book is available for borrowing"""
         return self.status == 'available'
 
 class User:
     """
-    Lớp cơ sở (base class) cho tất cả người dùng hệ thống.
+    Base class for all system users.
     """
     def __init__(self, user_id: int, username: str, name: str, contact_info: str, password: str):
         self.user_id = user_id
@@ -47,18 +47,18 @@ class User:
         self.password = password  
 
     def login(self):
-        """Logic đăng nhập (Sẽ nằm trong controller)"""
-        print(f"Người dùng {self.username} đang đăng nhập...")
+        """Login logic (Will be in the controller)"""
+        print(f"User {self.username} is logging in...")
         pass
 
     def logout(self):
-        """Logic đăng xuất (Sẽ nằm trong controller)"""
-        print(f"Người dùng {self.username} đã đăng xuất.")
+        """Logout logic (Will be in the controller)"""
+        print(f"User {self.username} has logged out.")
         pass
 
 class BorrowingRecord:
     """
-    Đại diện cho một bản ghi mượn/trả sách.
+    Represents a book borrowing/returning record.
     """
     def __init__(self, record_id: int, book_id: int, reader_id: int, borrow_date: date, due_date: date):
         self.record_id = record_id
@@ -66,48 +66,48 @@ class BorrowingRecord:
         self.reader_id = reader_id
         self.borrow_date = borrow_date
         self.due_date = due_date
-        self.return_date: date = None  # Sẽ được cập nhật khi sách được trả
+        self.return_date: date = None  # Will be updated when the book is returned
         self.fine_amount: float = 0.0
 
     def calculate_fine(self) -> float:
-        """Tính phí phạt nếu trả sách muộn (Logic sẽ nằm trong controller)"""
+        """Calculates the fine if the book is returned late (Logic will be in the controller)"""
         if self.return_date and self.return_date > self.due_date:
             days_overdue = (self.return_date - self.due_date).days
-            # Giả sử phí phạt là 1000 VNĐ/ngày
+            # Assuming the fine is 1000 VND/day
             self.fine_amount = days_overdue * 1000
         
         return self.fine_amount
 
 class Reader(User):
     """
-    Lớp đại diện cho Bạn đọc, kế thừa từ User.
+    Class representing a Reader, inherits from User.
     """
     def __init__(self, user_id: int, username: str, name: str, contact_info: str, password: str, reader_id: int):
-        # Gọi constructor của lớp cha (User)
+        # Call the constructor of the parent class (User)
         super().__init__(user_id, username, name, contact_info, password)
         self.reader_id = reader_id
-        self.borrowing_history: List[BorrowingRecord] = [] # Sẽ được tải từ CSDL
+        self.borrowing_history: List[BorrowingRecord] = [] # Will be loaded from DB
 
     def view_borrowing_history(self):
-        """Hiển thị lịch sử mượn sách (Logic sẽ nằm trong controller)"""
-        print(f"Lịch sử mượn sách của bạn đọc {self.name}:")
+        """Displays borrowing history (Logic will be in the controller)"""
+        print(f"Borrowing history for reader {self.name}:")
         if not self.borrowing_history:
-            print("Chưa mượn cuốn nào.")
+            print("No books borrowed yet.")
             return
         
         for record in self.borrowing_history:
-            print(f"  - Record {record.record_id}: Mượn sách {record.book_id} ngày {record.borrow_date}")
+            print(f"  - Record {record.record_id}: Borrowed book {record.book_id} on {record.borrow_date}")
 
 class Librarian(User):
     """
-    Lớp đại diện cho Thủ thư, kế thừa từ User.
+    Class representing a Librarian, inherits from User.
     """
     def __init__(self, user_id: int, username: str, name: str, contact_info: str, password: str, staff_id: str, role: str):
         super().__init__(user_id, username, name, contact_info, password)
         self.staff_id = staff_id
         self.role = role
 
-    # --- Các phương thức này sẽ được triển khai logic trong 'controller.py' ---
+    # --- These methods will have their logic implemented in 'controller.py' ---
     
     def add_book(self):
         pass
@@ -144,7 +144,7 @@ class Librarian(User):
 
 class Admin(Librarian):
     """
-    Lớp đại diện cho Admin, kế thừa từ Librarian.
+    Class representing an Admin, inherits from Librarian.
     """
     def __init__(self, user_id: int, username: str, name: str, contact_info: str, password: str, 
                  staff_id: str, role: str, admin_id: int, privilege_level: str):
@@ -152,7 +152,7 @@ class Admin(Librarian):
         self.admin_id = admin_id
         self.privilege_level = privilege_level
 
-    # --- Các phương thức này sẽ được triển khai logic trong 'controller.py' ---
+    # --- These methods will have their logic implemented in 'controller.py' ---
     
     def create_staff_account(self):
         pass
