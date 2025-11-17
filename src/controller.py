@@ -1,11 +1,6 @@
-
 import database as db  
 import models as models 
-
-
 from datetime import date, timedelta
-
-
 
 def controller_login(username, password):
     
@@ -79,9 +74,8 @@ def controller_login(username, password):
 
     finally:
         
-        conn.close()
-
-
+        conn.close() 
+        
 def controller_register_reader(username, password, name, email, phone):
     
     conn = db.connect_db()
@@ -112,9 +106,7 @@ def controller_register_reader(username, password, name, email, phone):
 
 
 def controller_add_new_book(title, author, genre):
-    """
-    Handles logic for adding a new book.
-    """
+
     conn = db.connect_db()
     if conn is None:
         return False
@@ -148,8 +140,6 @@ def controller_search_book(keyword):
         return book_list
     finally:
         conn.close()
-
-
 
 def controller_borrow_book(reader_id, book_id):
     """
